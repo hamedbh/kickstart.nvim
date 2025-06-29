@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -689,6 +689,27 @@ require('lazy').setup({
               -- diagnostics = { disable = { 'missing-fields' } },
             },
           },
+          -- Add this section to properly handle root directory detection
+          root_dir = function(fname)
+            -- Use nvim-lspconfig's util.find_git_ancestor function for git-based projects
+            local util = require 'lspconfig.util'
+
+            -- First look for .luarc.json or other Lua project files
+            local lua_root = util.root_pattern('.luarc.json', '.luarc.jsonc', '.luacheckrc', 'stylua.toml', 'selene.toml')(fname)
+
+            -- Then look for git root
+            local git_root = util.find_git_ancestor(fname)
+
+            -- Return the first valid root found, or nil if in home directory
+            local root = lua_root or git_root
+
+            -- Check if root is home directory and reject it
+            if root == vim.fn.expand '~' then
+              return nil
+            end
+
+            return root
+          end,
         },
       }
 
